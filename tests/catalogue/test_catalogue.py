@@ -1,7 +1,7 @@
 import pytest
 import datetime
 
-from astropy.coordinates import EarthLocation
+from astropy.coordinates import EarthLocation, AltAz, SkyCoord
 from astropy import units as u
 from astropy.time import Time
 
@@ -25,13 +25,18 @@ class TestCatalogue:
     def test_load(self, hyg30):
         assert isinstance(hyg30, Catalogue)
 
+    def test_can_count(self, hyg30):
+        assert hyg30.count == 5075
+
     def test_with_planets(self, hyg30, ago):
         assert len(hyg30.altaz(ago)) == 5075
 
     def test_polaris(self, hyg30, ago):
-        # Check that the latitude of Polaris is within 1 degree of the observer's latitude
         altaz = hyg30.altaz(ago)
+        # Check that the altitude of Polaris is within 1 degree of the observer's latitude
         assert altaz[47].alt.degree == pytest.approx(ago.lat.degree, abs=1)
+        # Check that the azimuth of Polaris is within 1 degree of north (on northern hemisphere)
+        assert altaz[47].az.degree == pytest.approx(0, abs=1)
 
     def test_sirius(self, hyg30, ago):
         altaz = hyg30.altaz(ago, Time(datetime.datetime(2024, 9, 25, 21, 56, 37, tzinfo=datetime.UTC)))
@@ -50,3 +55,6 @@ class TestCatalogue:
         vmag = hyg30.vmag(ago)
         assert vmag.shape == (5075,)
         assert vmag[0] == pytest.approx(-1.45, abs=0.05)
+
+    def test_altaz_is_a_skycoord(self, altaz):
+        assert isinstance(altaz, SkyCoord)

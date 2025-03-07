@@ -1,4 +1,6 @@
 import datetime
+
+import numpy as np
 import pandas as pd
 
 from pathlib import Path
@@ -10,7 +12,6 @@ from astropy import units as u
 
 class Catalogue:
     def __init__(self, filename: Path = None):
-        # Load stars from catalogue
         self._populated = False
 
         if filename is not None:
@@ -92,7 +93,7 @@ class Catalogue:
         Optionally include planets.
         """
         self.build_planets(location, time)
-        return pd.concat([self.stars, self.planets]).vmag
+        return pd.concat([self.stars, self.planets]).vmag.to_numpy()
 
     @staticmethod
     def planet_brightness(planet: str,
@@ -125,3 +126,7 @@ class Catalogue:
                 mag = -6.87
 
         return mag + 5 * np.log10(distance_earth.to(u.au).value * distance_sun.to(u.au).value)
+
+    @property
+    def count(self) -> int:
+        return len(self.stars) + 7
