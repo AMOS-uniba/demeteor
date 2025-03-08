@@ -1,4 +1,5 @@
 import datetime
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -84,6 +85,17 @@ class Catalogue:
                 return self.stars_skycoord.transform_to(altaz)
         else:
             return AltAz()
+
+    def altaz_numpy(self,
+                    location: EarthLocation,
+                    time: Time = None,
+                    *,
+                    planets: bool = True):
+        """
+        Return the catalogue in alt-az coordinates at `location` and at `time`, converted to a `numpy` array.
+        """
+        altaz = self.altaz(location, time, planets=planets)
+        return np.array([altaz.az.radian, 90 - altaz.alt.degree], dtype=float).T
 
     def vmag(self,
              location: EarthLocation,
