@@ -1,5 +1,5 @@
 import datetime
-from typing import Any
+from typing import Any, Optional
 
 import numpy as np
 import pandas as pd
@@ -12,17 +12,27 @@ from astropy import units as u
 
 
 class Catalogue:
+    PLANETS = ['mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune']
+
     def __init__(self, filename: Path = None):
         self._populated = False
+        self.planets = []
+        self.planets_skycoord = None
 
         if filename is not None:
             self._populated = True
-            self.planets = []
-            self.planets_skycoord = None
             self.stars = pd.read_csv(filename, sep='\t', header=1)
             self.stars_skycoord = SkyCoord(self.stars.ra.to_numpy() * u.deg,
                                            self.stars.dec.to_numpy() * u.deg,
                                            frame=FK5(equinox=Time('J2000')))
+        else:
+            self.stars = []
+
+        self._mask = np.ones(shape=len(self.stars) + len(self.PLANETS), dtype=bool)
+
+    @property
+    def populated(self) -> bool:
+        return self._populated
 
     def build_planets(self,
                       location: EarthLocation,
@@ -35,7 +45,7 @@ class Catalogue:
         planets = pd.DataFrame(columns=self.stars.columns)
 
         index = len(self.stars)
-        for name in ['mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune']:
+        for name in self.PLANETS:
             body = get_body(name, time=time, location=location)
             sundist = body.hcrs.distance
             phase = body.separation(sun)
@@ -67,7 +77,8 @@ class Catalogue:
               location: EarthLocation,
               time: Time = None,
               *,
-              planets: bool = True) -> AltAz:
+              planets: bool = True,
+              masked: bool) -> AltAz:
         """
         Return the catalogue in alt-az coordinates at `location` and at `time`.
         Optionally include planets.
@@ -80,32 +91,25 @@ class Catalogue:
             if planets:
                 self.build_planets(location, time)
                 total = concatenate([self.stars_skycoord, self.planets_skycoord])
-                return total.transform_to(altaz)
             else:
-                return self.stars_skycoord.transform_to(altaz)
+                total = self.stars_skycoord
+
+            return (total[self.mask] if masked else total).transform_to(altaz)
         else:
             return AltAz()
 
-    def altaz_numpy(self,
-                    location: EarthLocation,
-                    time: Time = None,
-                    *,
-                    planets: bool = True):
-        """
-        Return the catalogue in alt-az coordinates at `location` and at `time`, converted to a `numpy` array.
-        """
-        altaz = self.altaz(location, time, planets=planets)
-        return np.array([altaz.az.radian, 90 - altaz.alt.degree], dtype=float).T
-
     def vmag(self,
              location: EarthLocation,
-             time: Time = None) -> np.ndarray[float]:
+             time: Time = None,
+             *,
+             masked: bool) -> np.ndarray[float]:
         """
         Return visual magnitudes of all objects at `location` and at `time`.
         Optionally include planets.
         """
         self.build_planets(location, time)
-        return pd.concat([self.stars, self.planets]).vmag.to_numpy()
+        vmags = pd.concat([self.stars, self.planets]).vmag.to_numpy()
+        return vmags[self.mask] if masked else vmags
 
     @staticmethod
     def planet_brightness(planet: str,
@@ -141,4 +145,18 @@ class Catalogue:
 
     @property
     def count(self) -> int:
-        return len(self.stars) + 7
+        return len(self.stars) + len(self.planets)
+
+    @property
+    def visible_count(self) -> int:
+        return len(self.mask[self.mask])
+
+    @property
+    def mask(self) -> np.ndarray[bool]:
+        return self._mask
+
+    @mask.setter
+    def mask(self, m: Optional[np.ndarray[bool]] = None) -> None:
+        self._mask = np.ones(shape=(self.count,), dtype=bool) if m is None else m
+        assert self.mask.shape == (self.count,), \
+            f"Mask shape does not match data shape: expected {self.count,}, got {self.mask.shape}"

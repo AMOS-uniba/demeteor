@@ -9,8 +9,10 @@ from amosutils.catalogue import Catalogue
 
 
 @pytest.fixture
-def hyg30():
-    return Catalogue('tests/HYG30.tsv')
+def hyg30(ago):
+    hyg = Catalogue('tests/HYG30.tsv')
+    hyg.build_planets(ago)
+    return hyg
 
 @pytest.fixture
 def ago():
@@ -36,7 +38,7 @@ class TestCatalogue:
         # Check that the altitude of Polaris is within 1 degree of the observer's latitude
         assert altaz[47].alt.degree == pytest.approx(ago.lat.degree, abs=1)
         # Check that the azimuth of Polaris is within 1 degree of north (on northern hemisphere)
-        assert altaz[47].az.degree == pytest.approx(0, abs=1)
+        assert abs((altaz[47].az.degree + 180) % 360 - 180) == pytest.approx(0, abs=1)
 
     def test_sirius(self, hyg30, ago):
         altaz = hyg30.altaz(ago, Time(datetime.datetime(2024, 9, 25, 21, 56, 37, tzinfo=datetime.UTC)))
@@ -47,9 +49,8 @@ class TestCatalogue:
         hyg30.build_planets(ago)
         assert len(hyg30.planets_skycoord) == 7
 
-    def test_jupiter(self, hyg30, ago):
-        pass
-        #assert hyg30.vmag[5071] == pytest.approx(-2, abs=0.5)
+    def test_jupiter_is_really_bright(self, hyg30, ago):
+        assert hyg30.vmag(ago)[5071] == pytest.approx(-2, abs=0.5)
 
     def test_vmag(self, hyg30, ago):
         vmag = hyg30.vmag(ago)
