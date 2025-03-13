@@ -148,7 +148,7 @@ class Catalogue:
         return len(self.stars) + len(self.planets)
 
     @property
-    def visible_count(self) -> int:
+    def count_visible(self) -> int:
         return len(self.mask[self.mask])
 
     @property
@@ -160,3 +160,6 @@ class Catalogue:
         self._mask = np.ones(shape=(self.count,), dtype=bool) if m is None else m
         assert self.mask.shape == (self.count,), \
             f"Mask shape does not match data shape: expected {self.count,}, got {self.mask.shape}"
+
+    def __str__(self):
+        return f"<Catalogue with {self.count_visible} / {self.count} reference objects>"
