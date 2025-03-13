@@ -8,6 +8,9 @@ class Projection(metaclass=ABCMeta):
     """
     A base class for all projections. Should implement xy -> za and za -> xy conversions.
     """
+    bounds = np.array((
+        (0, None),
+    ))
 
     def __init__(self):
         pass

@@ -1,10 +1,22 @@
 import math
+from abc import ABC, abstractmethod
+
 import numpy as np
 import scipy as sp
 import numpy.typing as npt
 
 
-class ScalingShifter:
+class Shifter(ABC):
+    @abstractmethod
+    def __call__(self, x: np.ndarray, y: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        pass
+
+    @abstractmethod
+    def invert(self, nx: np.ndarray, ny: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        pass
+
+
+class ScalingShifter(Shifter):
     """ Shifts and scales the sensor without rotation """
     def __init__(self, *, x0: float = 0, y0: float = 0, xs: float = 1, ys: float = 1):
         self.x0 = x0
@@ -17,14 +29,19 @@ class ScalingShifter:
         ys = (y - self.y0) * self.ys
         return xs, ys
 
+    def invert(self, nx: np.ndarray, ny: np.ndarray):
+        x = self.x0 + nx / self.xs
+        y = self.y0 + ny / self.ys
+        return x, y
 
-class OpticalAxisShifter:
+
+class OpticalAxisShifter(Shifter):
     """ Shifts and derotates the optical axis of the sensor """
     def __init__(self, *, x0: float = 0, y0: float = 0, a0: float = 0, E: float = 0):
-        self.x0 = x0                # x position of the centre of optical axis
-        self.y0 = y0                # y position of the centre of optical axis
+        self.x0 = x0                # x position of the centre of the optical axis
+        self.y0 = y0                # y position of the centre of the optical axis
         self.a0 = a0                # rotation of the optical axis
-        self.E = E                  # true azimuth of centre of FoV
+        self.E = E                  # true azimuth of the centre of FoV
 
     def __call__(self, x: np.ndarray, y: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         xs = x - self.x0
