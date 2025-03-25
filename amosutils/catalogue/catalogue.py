@@ -73,6 +73,24 @@ class Catalogue:
                                          planets.dec.to_numpy() * u.deg,
                                          frame=FK5(equinox=Time('J2000')))
 
+    def radec(self,
+              location: EarthLocation,
+              time: Time = None,
+              *,
+              planets: bool = True,
+              masked: bool) -> SkyCoord:
+        if self._populated:
+            if time is None:
+                time = Time(datetime.datetime.now(tz=datetime.UTC))
+
+            if planets:
+                self.build_planets(location, time)
+                total = concatenate([self.stars_skycoord, self.planets_skycoord])
+            else:
+                total = self.stars_skycoord
+
+            return total[self.mask] if masked else total
+
     def altaz(self,
               location: EarthLocation,
               time: Time = None,
@@ -83,20 +101,9 @@ class Catalogue:
         Return the catalogue in alt-az coordinates at `location` and at `time`.
         Optionally include planets.
         """
-        if self._populated:
-            if time is None:
-                time = Time(datetime.datetime.now(tz=datetime.UTC))
-
-            altaz = AltAz(location=location, obstime=time, pressure=100000 * u.pascal, obswl=550 * u.nm)
-            if planets:
-                self.build_planets(location, time)
-                total = concatenate([self.stars_skycoord, self.planets_skycoord])
-            else:
-                total = self.stars_skycoord
-
-            return (total[self.mask] if masked else total).transform_to(altaz)
-        else:
-            return AltAz()
+        altaz = AltAz(location=location, obstime=time, pressure=100000 * u.pascal, obswl=550 * u.nm)
+        radec = self.radec(location, time, planets=planets, masked=masked)
+        return radec.transform_to(altaz)
 
     def vmag(self,
              location: EarthLocation,
