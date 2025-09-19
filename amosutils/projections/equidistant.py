@@ -7,6 +7,8 @@ from .base import Projection
 
 class EquidistantProjection(Projection):
     """ Equidistant projection that is perfectly aligned to zenith-north """
+    name = 'equidistant'
+
     def __init__(self):
         pass
 

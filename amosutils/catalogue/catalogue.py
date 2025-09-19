@@ -90,6 +90,8 @@ class Catalogue:
                 total = self.stars_skycoord
 
             return total[self.mask] if masked else total
+        else:
+            return SkyCoord([] * u.rad, [] * u.rad, frame=FK5(equinox=Time('J2000')))
 
     def altaz(self,
               location: EarthLocation,
@@ -101,6 +103,9 @@ class Catalogue:
         Return the catalogue in alt-az coordinates at `location` and at `time`.
         Optionally include planets.
         """
+        if time is None:
+            time = Time(datetime.datetime.now(tz=datetime.UTC))
+
         altaz = AltAz(location=location, obstime=time, pressure=100000 * u.pascal, obswl=550 * u.nm)
         radec = self.radec(location, time, planets=planets, masked=masked)
         return radec.transform_to(altaz)

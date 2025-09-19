@@ -3,6 +3,9 @@ import numpy as np
 
 class Scaler:
     """ Class for scaling pixels to lengths """
+
+    name = 'scaler'
+
     def __init__(self, scale_x: float = 1, scale_y: float = 1):
         self.scale_x = scale_x
         self.scale_y = scale_y

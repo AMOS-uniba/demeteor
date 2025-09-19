@@ -10,6 +10,9 @@ from .zenith import ZenithShifter
 
 
 class BorovickaProjection(Projection):
+    """
+    Borovička all-sky projection.
+    """
     bounds = np.array((
         (None, None),  # x0
         (None, None),  # y0
@@ -24,6 +27,7 @@ class BorovickaProjection(Projection):
         (0, None),     # epsilon
         (None, None),  # E
     ))
+    name = 'Borovička'
 
     def __init__(self,
                  x0: float = 0, y0: float = 0, a0: float = 0,
@@ -40,13 +44,15 @@ class BorovickaProjection(Projection):
 
     def __call__(self,
                  x: Union[float, np.ndarray],
-                 y: Union[float, np.ndarray]) -> Tuple[np.ndarray, np.ndarray]:
+                 y: Union[float, np.ndarray]) -> tuple[np.ndarray, np.ndarray]:
         r, b = self.axis_shifter(x, y)
         u = self.radial_transform(r)
         z, a = self.zenith_shifter(u, b)
         return z, a
 
-    def invert(self, z: np.ndarray[float], a: np.ndarray[float]) -> Tuple[np.ndarray[float], np.ndarray[float]]:
+    def invert(self,
+               z: np.ndarray[float],
+               a: np.ndarray[float]) -> Tuple[np.ndarray[float], np.ndarray[float]]:
         u, b = self.zenith_shifter.invert(z, a)
         r = self.radial_transform.invert(u)
         x, y = self.axis_shifter.invert(r, b)

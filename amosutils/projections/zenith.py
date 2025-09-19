@@ -11,6 +11,9 @@ class ZenithShifter(Projection):
     ZenithShifter is a spherical -> spherical projection that shifts the zenith to a different
     position at true zenith distance `epsilon` and rotated such that true zenith is at 180°.
     """
+
+    name = 'zenith-shifter'
+
     def __init__(self, epsilon: float = 0, E: float = 0):
         super().__init__()
         self.epsilon = epsilon
