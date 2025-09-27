@@ -20,67 +20,116 @@ class RadialTransformer:
 class LinearTransformer(RadialTransformer):
     """ Linear radial transform, u = Vr """
 
-    def __init__(self, linear: float = 1):
-        self.linear = linear  # radial stretch, linear coefficient
+    def __init__(self, V: float = 1):
+        self.V = V  # radial stretch, linear coefficient
 
     def __call__(self, r):
-        return self.linear * r
+        return self.V * r
 
     def fprime(self, r):
         """ du / dr = V """
-        return self.linear * np.ones_like(r)
+        return self.V * np.ones_like(r)
 
     def as_dict(self):
         return dict(
-            V=float(self.linear),
+            V=float(self.V),
         )
 
 
 class ExponentialTransformer(LinearTransformer):
     """ Linear + exponential radial correction, u = Vr + S(e^(Dr) - 1) """
 
-    def __init__(self, linear: float = 1, lin_coef: float = 0, lin_exp: float = 0):
-        super().__init__(linear)
-        self.lin_coef = lin_coef  # radial stretch, exponential term, linear coefficient
-        self.lin_exp = lin_exp  # radial stretch, exponential term, exponent coefficient
+    def __init__(self, V: float = 1, p1: float = 0, r1: float = 0):
+        super().__init__(V)
+        self.p1 = p1  # radial stretch, exponential term, linear coefficient
+        self.r1 = r1  # radial stretch, exponential term, exponent coefficient
 
     def __call__(self, r):
-        return super().__call__(r) + self.lin_coef * (np.exp(self.lin_exp * r) - 1)
+        return super().__call__(r) + self.p1 * (np.exp(self.r1 * r) - 1)
 
     def fprime(self, r):
         """ du/dr = V + SDe^(Dr) """
-        return super().fprime(r) + self.lin_coef * self.lin_exp * np.exp(self.lin_exp * r)
+        return super().fprime(r) + self.p1 * self.r1 * np.exp(self.r1 * r)
 
     def as_dict(self):
         return super().as_dict() | dict(
-            S=float(self.lin_coef),
-            D=float(self.lin_exp),
+            S=float(self.p1),
+            D=float(self.r1),
         )
 
 
 class BiexponentialTransformer(ExponentialTransformer):
     """ Bi-exponential radial fitting procedure, u = Vr + S(e^(Dr) - 1) + P(e^(Qr^2) - 1) """
 
-    def __init__(self, linear: float = 0,
-                 lin_coef: float = 0, lin_exp: float = 0,
-                 quad_coef: float = 0, quad_exp: float = 0):
-        super().__init__(linear, lin_coef, lin_exp)
-        self.quad_coef = quad_coef  # radial stretch, square-exponential term, linear coefficient
-        self.quad_exp = quad_exp    # radial stretch, square-exponential term, exponent coefficient
+    def __init__(self, V: float = 0,
+                 S: float = 0, D: float = 0,
+                 P: float = 0, Q: float = 0):
+        super().__init__(V, S, D)
+        self.P = P # radial stretch, square-exponential term, linear coefficient
+        self.Q = Q # radial stretch, square-exponential term, exponent coefficient
 
     def __call__(self, r):
-        return super().__call__(r) + self.quad_coef * (np.exp(self.quad_exp * r * r) - 1)
+        return super().__call__(r) + self.P * (np.exp(self.Q * r * r) - 1)
 
     def fprime(self, r):
         """ du/dr = V + SDe^(Dr) + 2 PQr e^(Qr^2) """
-        return super().fprime(r) + 2 * self.quad_coef * self.quad_exp * r * np.exp(self.quad_exp * r * r)
+        return super().fprime(r) + 2 * self.P * self.Q * r * np.exp(self.Q * r * r)
 
     def __str__(self):
-        return f"<{self.__class__.__name__} V={self.linear} S={self.lin_coef} " \
-               f"D={self.lin_exp} P={self.quad_coef} Q={self.quad_exp}>"
+        return f"<{self.__class__.__name__} {self.V=} {self.S=} {self.D=} {self.P=} {self.Q=}>"
 
     def as_dict(self):
         return super().as_dict() | dict(
-            P=float(self.quad_coef),
-            Q=float(self.quad_exp),
+            P=float(self.P),
+            Q=float(self.Q),
         )
+
+
+class SaneExponentialTransformer(LinearTransformer):
+    """ Sanitized linear + exponential radial correction, u = Vr + k_1 * (e^(r/r_1) - 1) """
+
+    def __init__(self, V: float = 1, p1: float = 0, r1: float = 0):
+        super().__init__(V)
+        self.p1 = p1  # radial stretch, exponential term, linear coefficient
+        self.r1 = r1    # radial stretch, exponential term, exponent coefficient
+
+    def __call__(self, r):
+        return super().__call__(r) + self.p1 * (np.exp(r / self.r1) - 1)
+
+    def fprime(self, r):
+        """ du/dr = V + S / r_1 * e^(r / r_1) """
+        return super().fprime(r) + self.p1 / self.r1 * np.exp(r / self.r1)
+
+    def as_dict(self):
+        return super().as_dict() | dict(
+            p1=float(self.p1),
+            r1=float(self.r1),
+        )
+
+
+class SaneBiexponentialTransformer(SaneExponentialTransformer):
+    def __init__(self, V: float = 0,
+                 p1: float = 0, r1: float = 0,
+                 p2: float = 0, r2: float = 0):
+        super().__init__(V, p1, r1)
+        self.p2 = p2  # radial stretch, square-exponential term, linear coefficient
+        self.r2 = r2    # radial stretch, square-exponential term, exponent coefficient
+
+    def __call__(self, r):
+        return super().__call__(r) + self.p2 * (np.exp((r / self.r2)**2) - 1)
+
+    def fprime(self, r):
+        """ du/dr = V + SDe^(Dr) + 2 PQr e^(Qr^2) """
+        # FixMe This is wrong! just copd
+        return super().fprime(r) + 2 * self.p2 * self.r2 * r * np.exp(self.r2 * r * r)
+
+    def __str__(self):
+        return f"<{self.__class__.__name__} {self.V=} {self.p1=} {self.r1=} {self.p2=} {self.r2=}>"
+
+    def as_dict(self):
+        return super().as_dict() | dict(
+            p2=float(self.p2),
+            r2=float(self.r2),
+        )
+
+
