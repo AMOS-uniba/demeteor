@@ -2,7 +2,8 @@ import pytest
 import math
 import numpy as np
 
-from tests.projections.base import pytest_generate_tests, TestProjection
+from amosutils.projections.koniferka import KoniferkaProjection
+from tests.projections.base import pytest_generate_tests, BaseTestProjection
 from amosutils.projections import Projection, BorovickaProjection
 
 
@@ -69,14 +70,7 @@ def boro_karel():
     )
 
 
-class TestBorovickaProjection(TestProjection):
-    grid = [
-        dict(x=x, y=y)
-        for x in np.linspace(-1, 1, 12)
-        for y in np.linspace(-1, 1, 12)
-        if x**2 + y**2 <= 1
-    ]
-
+class TestBorovickaProjection(BaseTestProjection):
     big_grid = [
         dict(x=x, y=y)
         for x in np.linspace(0, 1600, 11)
@@ -84,13 +78,22 @@ class TestBorovickaProjection(TestProjection):
     ]
 
     params = dict(
-        test_identity_invert=grid,
-        test_rotated_invert=grid,
+        test_identity_invert=BaseTestProjection.grid,
+        test_rotated_invert=BaseTestProjection.grid,
+        test_inversion=BaseTestProjection.grid,
         test_zenith_invert=big_grid,
         test_general_invert=big_grid,
         test_random_invert=big_grid,
         test_karel_invert=big_grid,
     )
+
+    projection = BorovickaProjection(
+        0, 0.4, math.radians(334.5),
+        0.00423, math.radians(23.5),
+        1, 0.01, 0, 0, 0,
+        math.radians(0.56), math.radians(0.343)
+    )
+
 
     def test_identity_zero(self, boro_identity):
         assert boro_identity(0, 0) == (0, 0)
@@ -127,3 +130,31 @@ class TestBorovickaProjection(TestProjection):
 
     def test_karel_invert(self, boro_karel, x, y):
         assert boro_karel.invert(*boro_karel(x, y)) == pytest.approx((x, y), abs=1e-9)
+
+
+class TestKoniferkaBasic(BaseTestProjection):
+    projection = KoniferkaProjection(0, 0, 0, 0, 0, 1, 0, 10, 0, 10, 0, 0)
+
+
+class TestKoniferkaRandom(BaseTestProjection):
+    projection = KoniferkaProjection(
+        0, 0, 0,
+        0, 0, #0.00423, math.radians(23.5),
+        1, 0.0000753, 8.8, 0.0005691, 8.8,
+        math.radians(2.5142), math.radians(337.910437),
+    )
+
+    projection = KoniferkaProjection(
+        0, 0.4, math.radians(334.5),
+        0.00423, math.radians(23.5),
+        1, 0.01, np.inf, 0, np.inf,
+        math.radians(0.56), math.radians(0.343)
+    )
+
+class TestBorovickaRandom1(BaseTestProjection):
+    projection = BorovickaProjection(
+        824.4, 617.625, math.radians(357.4523),
+        0.00423, math.radians(23.5),
+        0.00198453, 0.0000753, 0.000572, 0.0005691, 2.3e-06,
+        math.radians(2.5142), math.radians(337.910437),
+    )

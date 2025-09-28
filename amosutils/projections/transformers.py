@@ -21,6 +21,7 @@ class LinearTransformer(RadialTransformer):
     """ Linear radial transform, u = Vr """
 
     def __init__(self, V: float = 1):
+        assert V > 0, "Radial linear scale V must be > 0"
         self.V = V  # radial stretch, linear coefficient
 
     def __call__(self, r):
@@ -39,22 +40,22 @@ class LinearTransformer(RadialTransformer):
 class ExponentialTransformer(LinearTransformer):
     """ Linear + exponential radial correction, u = Vr + S(e^(Dr) - 1) """
 
-    def __init__(self, V: float = 1, p1: float = 0, r1: float = 0):
+    def __init__(self, V: float = 1, S: float = 0, D: float = 0):
         super().__init__(V)
-        self.p1 = p1  # radial stretch, exponential term, linear coefficient
-        self.r1 = r1  # radial stretch, exponential term, exponent coefficient
+        self.S = S  # radial stretch, exponential term, linear coefficient
+        self.D = D  # radial stretch, exponential term, exponent coefficient
 
     def __call__(self, r):
-        return super().__call__(r) + self.p1 * (np.exp(self.r1 * r) - 1)
+        return super().__call__(r) + self.S * (np.exp(self.D * r) - 1)
 
     def fprime(self, r):
         """ du/dr = V + SDe^(Dr) """
-        return super().fprime(r) + self.p1 * self.r1 * np.exp(self.r1 * r)
+        return super().fprime(r) + self.S * self.D * np.exp(self.D * r)
 
     def as_dict(self):
         return super().as_dict() | dict(
-            S=float(self.p1),
-            D=float(self.r1),
+            S=float(self.S),
+            D=float(self.D),
         )
 
 
@@ -90,6 +91,7 @@ class SaneExponentialTransformer(LinearTransformer):
 
     def __init__(self, V: float = 1, p1: float = 0, r1: float = 0):
         super().__init__(V)
+        assert abs(r1) > 0.1, "Exponent scale r1 must be > 0.1"
         self.p1 = p1  # radial stretch, exponential term, linear coefficient
         self.r1 = r1    # radial stretch, exponential term, exponent coefficient
 
@@ -109,19 +111,19 @@ class SaneExponentialTransformer(LinearTransformer):
 
 class SaneBiexponentialTransformer(SaneExponentialTransformer):
     def __init__(self, V: float = 0,
-                 p1: float = 0, r1: float = 0,
-                 p2: float = 0, r2: float = 0):
+                 p1: float = 0, r1: float = np.inf,
+                 p2: float = 0, r2: float = np.inf):
         super().__init__(V, p1, r1)
+        assert abs(r2) > 0.1, "Exponent scale r2 must be > 0.1 mm"
         self.p2 = p2  # radial stretch, square-exponential term, linear coefficient
-        self.r2 = r2    # radial stretch, square-exponential term, exponent coefficient
+        self.r2 = r2  # radial stretch, square-exponential term, exponent coefficient
 
     def __call__(self, r):
         return super().__call__(r) + self.p2 * (np.exp((r / self.r2)**2) - 1)
 
     def fprime(self, r):
         """ du/dr = V + SDe^(Dr) + 2 PQr e^(Qr^2) """
-        # FixMe This is wrong! just copd
-        return super().fprime(r) + 2 * self.p2 * self.r2 * r * np.exp(self.r2 * r * r)
+        return super().fprime(r) + 2 * self.p2 / self.r2**2 * r * np.exp((r / self.r2)**2)
 
     def __str__(self):
         return f"<{self.__class__.__name__} {self.V=} {self.p1=} {self.r1=} {self.p2=} {self.r2=}>"

@@ -1,7 +1,10 @@
+import dotmap
 import numpy as np
 from typing import Tuple, Any
 
 from abc import ABC, abstractmethod
+
+import yaml
 
 
 class Projection(ABC):
@@ -39,3 +42,14 @@ class Projection(ABC):
                   config: dict[str, Any]):
         return cls._registry[config['name']](**config['parameters'])
 
+    @classmethod
+    def from_dotmap(cls, dm):
+        """
+        Load from a dotmap. Useful as an intermediate step when loading from YAML.
+        """
+
+    @classmethod
+    def load(cls, file):
+        data = dotmap.DotMap(yaml.safe_load(file), _dynamic=False)
+        data = data.projection.parameters
+        return cls.from_dotmap(data)

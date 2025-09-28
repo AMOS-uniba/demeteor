@@ -2,7 +2,7 @@ import pytest
 import math
 import numpy as np
 
-from tests.projections.base import pytest_generate_tests, TestProjection
+from tests.projections.base import pytest_generate_tests, BaseTestProjection
 from amosutils.projections.shifters import OpticalAxisShifter, TiltShifter
 
 
@@ -32,7 +32,7 @@ def ts4():
                        A=0.00376, F=math.radians(65.25), E=math.radians(203.910437))
 
 
-class TestOpticalAxisShifter(TestProjection):
+class TestOpticalAxisShifter:
     params = dict(
         test_inverse=[
             dict(x=x, y=y)
@@ -42,11 +42,15 @@ class TestOpticalAxisShifter(TestProjection):
         ],
     )
 
+    @staticmethod
+    def compare_inverted(projection, x, y, atol=1e-12):
+        assert projection.invert(*projection(x, y)) == pytest.approx((x, y), abs=atol)
+
     def test_inverse(self, oas, x, y):
         self.compare_inverted(oas, x, y)
 
 
-class TestTiltShifter(TestProjection):
+class TestTiltShifter:
     grid = [
         dict(proj=proj, x=x, y=y)
         for proj in ['ts1', 'ts2', 'ts3', 'ts4']

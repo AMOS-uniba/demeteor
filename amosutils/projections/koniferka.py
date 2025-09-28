@@ -1,17 +1,21 @@
 import numpy as np
 import dotmap
 import yaml
-from typing import Tuple, Union
+from typing import Union
+from numpy.typing import NDArray
 
 from .base import Projection
 from .shifters import TiltShifter
-from .transformers import BiexponentialTransformer
+from .transformers import SaneBiexponentialTransformer
 from .zenith import ZenithShifter
 
 
 class KoniferkaProjection(Projection):
     """
-    iImproved Borovička all-sky projection, with correct dimensions.
+    Improved Borovička all-sky projection, with correct dimensions.
+    Namely,
+        r1 = 1 / D,
+        r2 = sqrt(1 / Q).
     """
     bounds = np.array((
         (None, None),  # x0
@@ -32,11 +36,8 @@ class KoniferkaProjection(Projection):
     def __init__(self,
                  x0: float = 0, y0: float = 0, a0: float = 0,
                  A: float = 0, F: float = 0,
-                 V: float = 1, k1: float = 0, p1: float = 0, : float = 0, Q: float = 0,
+                 V: float = 1, p1: float = 0, r1: float = np.inf, p2: float = 0, r2: float = np.inf,
                  epsilon: float = 0, E: float = 0):
-
-        assert V > 0, "Radial linear scale V must be > 0"
-
         super().__init__()
         self.axis_shifter = TiltShifter(x0=x0, y0=y0, a0=a0, A=A, F=F, E=E)
         self.radial_transform = SaneBiexponentialTransformer(V, p1, r1, p2, r2)
@@ -45,17 +46,27 @@ class KoniferkaProjection(Projection):
     def __call__(self,
                  x: Union[float, np.ndarray],
                  y: Union[float, np.ndarray]) -> tuple[np.ndarray, np.ndarray]:
+        print("Forward")
+        print(f"{x=}, {y=}")
         r, b = self.axis_shifter(x, y)
+        print(f"{r=}")
         u = self.radial_transform(r)
+        print(f"{u=}, {b=}")
         z, a = self.zenith_shifter(u, b)
+        print(f"{z=}, {a=}")
         return z, a
 
     def invert(self,
-               z: np.ndarray[float],
-               a: np.ndarray[float]) -> Tuple[np.ndarray[float], np.ndarray[float]]:
+               z: NDArray[np.floating],
+               a: NDArray[np.floating]) -> tuple[NDArray[np.floating], NDArray[np.floating]]:
+        print("Inverted")
+        print(f"{z=}, {a=}")
         u, b = self.zenith_shifter.invert(z, a)
+        print(f"{u=}, {b=}")
         r = self.radial_transform.invert(u)
+        print(f"{r=}")
         x, y = self.axis_shifter.invert(r, b)
+        print(f"{x=}, {y=}")
         return x, y
 
     def __str__(self):
@@ -71,18 +82,17 @@ class KoniferkaProjection(Projection):
         return (
             self.axis_shifter.x0, self.axis_shifter.y0, self.axis_shifter.a0,
             self.axis_shifter.A, self.axis_shifter.F,
-            self.radial_transform.V, self.radial_transform.lin_coef, self.radial_transform.lin_exp,
-            self.radial_transform.quad_coef, self.radial_transform.quad_exp,
+            self.radial_transform.V,
+            self.radial_transform.p1, self.radial_transform.r1,
+            self.radial_transform.p1, self.radial_transform.r2,
             self.zenith_shifter.epsilon, self.zenith_shifter.E,
         )
 
-    @staticmethod
-    def load(file):
-        data = dotmap.DotMap(yaml.safe_load(file), _dynamic=False)
-        data = data.projection.parameters
-        return BorovickaProjection(
-            data.x0, data.y0, data.a0,
-            data.A, data.F,
-            data.V, data.p1, data.r1, data.p2, data.r,
-            data.epsilon, data.E,
+    @classmethod
+    def from_dotmap(cls, dm):
+        return cls(
+            dm.x0, dm.y0, dm.a0,
+            dm.A, dm.F,
+            dm.V, dm.p1, dm.r1, dm.p2, dm.r2,
+            dm.epsilon, dm.E,
         )

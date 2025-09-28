@@ -1,5 +1,6 @@
 import math
 import numpy as np
+from numpy.typing import NDArray
 
 from typing import Any
 
@@ -23,14 +24,14 @@ class ZenithShifter(Projection):
         """
         Parameters
         ----------
-        u : Union[float, np.ndarray]    radial distance from origin in camera coordinates
-        b : Union[float, np.ndarray]    azimuth in camera coordinates
+        u : Union[float, ArrayLike]    radial distance from origin in camera coordinates
+        b : Union[float, ArrayLike]    azimuth in camera coordinates
 
         Returns
         -------
-        Tuple[Union[float, np.ndarray], Union[float, np.ndarray]]
-        z : Union[float, np.ndarray]    zenith distance in sky coordinates
-        a : Union[float, np.ndarray]    azimuth in sky coordinates
+        tuple[Union[float, ArrayLike], Union[float, ArrayLike]]
+        z : Union[float, ArrayLike]    zenith distance in sky coordinates
+        a : Union[float, ArrayLike]    azimuth in sky coordinates
         """
         if abs(self.epsilon) < 1e-14:  # for tiny epsilon there is no displacement
             z = u  # and we are able to calculate the coordinates immediately
@@ -44,7 +45,7 @@ class ZenithShifter(Projection):
 
         return z, np.mod(a, math.tau)  # wrap around to [0, 2pi)
 
-    def invert(self, z: np.ndarray[float], a: np.ndarray[float]) -> tuple[np.ndarray[float], np.ndarray[float]]:
+    def invert(self, z: NDArray, a: NDArray) -> tuple[NDArray, NDArray]:
         if abs(self.epsilon) < 1e-14:
             u = z
             b = a - self.E
@@ -58,7 +59,7 @@ class ZenithShifter(Projection):
         return u, np.mod(b, math.tau)  # wrap around to [0, 2pi)
 
     def __str__(self) -> str:
-        return f"<{self.__class__.__name__} epsilon={self.epsilon} E={self.E}>"
+        return f"<{self.__class__.__name__} {self.epsilon=} {self.E=}>"
 
     def as_dict(self) -> dict[str, float]:
         return dict(

@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 import scipy as sp
-import numpy.typing as npt
+from numpy.typing import ArrayLike
 
 
 class Shifter:
@@ -17,6 +17,9 @@ class Shifter:
 
     def invert(self, nx: np.ndarray, ny: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         return nx + self.x0, ny + self.y0
+
+    def as_dict(self) -> dict[str, float]:
+        return dict(x=self.x0, y=self.y0)
 
 
 class ScalingShifter(Shifter):
@@ -75,6 +78,8 @@ class TiltShifter(OpticalAxisShifter):
     """
     def __init__(self, *, x0: float = 0, y0: float = 0, a0: float = 0, A: float = 0, F: float = 0, E: float = 0):
         super().__init__(x0=x0, y0=y0, a0=a0, E=E)
+        assert -1 <= A <= 1, f"Invalid parameter {A=}: must be -1 <= A <= 1."
+
         self.A = A                  # imaging plane tilt, amplitude
         self.F = F                  # imaging plane tilt, phase
         self._phi = self.F - self.a0
@@ -91,8 +96,8 @@ class TiltShifter(OpticalAxisShifter):
         return r, b
 
     def invert(self,
-               r: np.ndarray[float],
-               b: np.ndarray[float]) -> tuple[np.ndarray[float], np.ndarray[float]]:
+               r: ArrayLike,
+               b: ArrayLike) -> tuple[ArrayLike, ArrayLike]:
         xi = b - self.a0 + self.E
         denom = 1 + self.A * np.sin(xi - self._phi)
         x = self.x0 + r * np.cos(xi) / denom
