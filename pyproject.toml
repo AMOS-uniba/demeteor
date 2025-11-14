@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "amosutils"
-version = "0.2.1"
+version = "0.2.2"
 description = "A collection of utilitiy functions for all-sky and spectral meteor cameras"
 authors = ["Martin Baláž <martin.balaz@fmph.uniba.sk>"]
 readme = "README.md"
