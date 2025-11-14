@@ -35,7 +35,7 @@ class ScalingShifter(Shifter):
 
     def invert(self, nx: np.ndarray, ny: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         return super().invert(nx / self.xs, ny / self.ys)
-
+    
 
 class OpticalAxisShifter(Shifter):
     """ Shifts and derotates the optical axis of the sensor """

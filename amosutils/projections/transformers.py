@@ -1,16 +1,18 @@
+from abc import ABC, abstractmethod
 import numpy as np
 import scipy as sp
 
 
-class RadialTransformer:
+class RadialTransformer(ABC):
     """ Class for transforming radial distances in all-sky projections """
 
     def __call__(self, r):
         raise NotImplementedError("Radial transformers must implement __call__(r: np.ndarray) -> np.ndarray")
 
+    @abstractmethod
     def fprime(self, u):
         """ Derivative function for the Newton method, not implemented in the abstract base class """
-        raise NotImplementedError("Radial transformers should implement df/dr as fprime(u: np.ndarray) -> np.ndarray")
+        raise NotImplementedError("Radial transformers must implement df/dr as fprime(u: np.ndarray) -> np.ndarray")
 
     def invert(self, u):
         """ Numerically approximate the inverse function using the Newton method """
