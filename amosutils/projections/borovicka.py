@@ -1,6 +1,4 @@
 import numpy as np
-import dotmap
-import yaml
 from typing import Union
 from numpy.typing import ArrayLike
 
@@ -51,6 +49,9 @@ class BorovickaProjection(Projection):
     def invert(self,
                z: ArrayLike,
                a: ArrayLike) -> tuple[ArrayLike, ArrayLike]:
+        if z.shape == (0,):
+            return np.empty((0,)), np.empty((0,))
+
         u, b = self.zenith_shifter.invert(z, a)
         r = self.radial_transform.invert(u)
         x, y = self.axis_shifter.invert(r, b)

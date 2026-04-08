@@ -29,7 +29,7 @@ class Projection(ABC):
         """ Apply an inverse projection to an array of points: za -> xy """
 
     @abstractmethod
-    def as_dict(self):
+    def as_dict(self) -> dict[str, float]:
         """ Return a dict representation of the Projection's parameters """
         pass
 

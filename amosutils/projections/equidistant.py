@@ -7,10 +7,11 @@ from .base import Projection
 
 class EquidistantProjection(Projection):
     """ Equidistant projection that is perfectly aligned to zenith-north """
+
     name = 'equidistant'
 
     def __init__(self):
-        pass
+        super().__init__()
 
     def __call__(self, x: np.ndarray, y: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         z = np.sqrt(np.square(x) + np.square(y))
@@ -19,3 +20,7 @@ class EquidistantProjection(Projection):
 
     def invert(self, z: np.ndarray, a: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         return z * np.sin(a), z * np.cos(a)
+
+    def as_dict(self):
+        return {}
+

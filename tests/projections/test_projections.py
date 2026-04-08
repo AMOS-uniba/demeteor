@@ -131,6 +131,11 @@ class TestBorovickaProjection(BaseTestProjection):
     def test_karel_invert(self, boro_karel, x, y):
         assert boro_karel.invert(*boro_karel(x, y)) == pytest.approx((x, y), abs=1e-9)
 
+    def test_empty(self, boro_karel):
+        z, a = boro_karel.invert(np.array([]), np.array([]))
+        assert z.shape == (0,)
+        assert a.shape == (0,)
+
 
 class TestKoniferkaBasic(BaseTestProjection):
     projection = KoniferkaProjection(0, 0, 0, 0, 0, 1, 0, 10, 0, 10, 0, 0)
