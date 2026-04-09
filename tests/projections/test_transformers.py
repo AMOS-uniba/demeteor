@@ -2,7 +2,7 @@ import numpy as np
 
 import pytest
 
-from amosutils.projections.transformers import LinearTransformer, ExponentialTransformer, BiexponentialTransformer, \
+from demeteor.projections.transformers import LinearTransformer, ExponentialTransformer, BiexponentialTransformer, \
     SaneBiexponentialTransformer, SaneExponentialTransformer
 
 

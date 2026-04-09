@@ -2,7 +2,7 @@ import pytest
 
 import numpy as np
 
-from amosutils.trajectory import RayMinimizer
+from demeteor.trajectory import RayMinimizer
 
 
 @pytest.fixture

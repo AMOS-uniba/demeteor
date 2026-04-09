@@ -1,8 +1,8 @@
 [tool.poetry]
-name = "amosutils"
-version = "0.2.3"
-description = "A collection of utilitiy functions for all-sky and spectral meteor cameras"
-authors = ["Martin Baláž <martin.balaz@fmph.uniba.sk>"]
+name = "demeteor"
+version = "0.1.0"
+description = "A collection of utility functions for all-sky and spectral meteor cameras"
+authors = ["Martin Odokienko <martin.balaz@fmph.uniba.sk>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]

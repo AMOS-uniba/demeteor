@@ -3,7 +3,7 @@ import math
 import numpy as np
 
 from tests.projections.base import pytest_generate_tests, BaseTestProjection
-from amosutils.projections.shifters import OpticalAxisShifter, TiltShifter
+from demeteor.projections.shifters import OpticalAxisShifter, TiltShifter
 
 
 @pytest.fixture

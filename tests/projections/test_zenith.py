@@ -3,7 +3,7 @@ import math
 import numpy as np
 
 from tests.projections.base import pytest_generate_tests, BaseTestProjection
-from amosutils.projections.zenith import ZenithShifter
+from demeteor.projections.zenith import ZenithShifter
 
 
 @pytest.fixture

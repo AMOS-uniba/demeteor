@@ -5,7 +5,7 @@ from astropy.coordinates import EarthLocation, AltAz, SkyCoord
 from astropy import units as u
 from astropy.time import Time
 
-from amosutils.catalogue import Catalogue
+from demeteor.catalogue import Catalogue
 
 
 @pytest.fixture

@@ -7,7 +7,7 @@ import numpy as np
 from astropy import units as u
 from astropy.coordinates import Angle
 
-from amosutils.physics.atmosphere import AirMass, AirDensity
+from demeteor.physics.atmosphere import AirMass, AirDensity
 
 
 class TestAtmosphere:

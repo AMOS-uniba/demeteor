@@ -2,9 +2,9 @@ import pytest
 import math
 import numpy as np
 
-from amosutils.projections.koniferka import KoniferkaProjection
+from demeteor.projections.koniferka import KoniferkaProjection
 from tests.projections.base import pytest_generate_tests, BaseTestProjection
-from amosutils.projections import Projection, BorovickaProjection
+from demeteor.projections import Projection, BorovickaProjection
 
 
 class TestBase:
