@@ -85,7 +85,7 @@ class Catalogue:
 
             if planets:
                 self.build_planets(location, time)
-                total = concatenate([self.stars_skycoord, self.planets_skycoord])
+                total = np.concatenate([self.stars_skycoord, self.planets_skycoord])
             else:
                 total = self.stars_skycoord
 
