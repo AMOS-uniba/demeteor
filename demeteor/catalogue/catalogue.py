@@ -9,47 +9,55 @@ from pathlib import Path
 from astropy.coordinates import EarthLocation, FK5, SkyCoord, AltAz, get_body, concatenate, Angle
 from astropy.time import Time
 from astropy import units as u
+from numpy.ma.core import shape
 
 
 class Catalogue:
+    COLUMNS = ['ra', 'dec', 'dist', 'vmag', 'absmag']
     PLANETS = ['mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune']
 
     def __init__(self, filename: Path = None):
-        self._populated = False
         self.planets = []
         self.planets_skycoord = None
 
-        if filename is not None:
+        self.build_planets()
+
+        if filename is None:
+            self._populated = False
+            self.stars = pd.DataFrame(columns=self.COLUMNS)
+            self.stars_skycoord = SkyCoord([] * u.deg,
+                                           [] * u.deg,
+                                           frame=FK5(equinox=Time('J2000')))
+        else:
             self._populated = True
             self.stars = pd.read_csv(filename, sep='\t', header=1)
             self.stars_skycoord = SkyCoord(self.stars.ra.to_numpy() * u.deg,
                                            self.stars.dec.to_numpy() * u.deg,
                                            frame=FK5(equinox=Time('J2000')))
-        else:
-            self.stars = []
 
-        self._mask = np.ones(shape=len(self.stars) + len(self.PLANETS), dtype=bool)
+        assert self.stars.columns.tolist() == self.COLUMNS, \
+            f"Invalid format for columns, expected {self.COLUMNS}"
+
+        self._mask = np.ones(shape=len(self.stars) + len(self.planets), dtype=bool)
 
     @property
     def populated(self) -> bool:
         return self._populated
 
     def build_planets(self,
-                      location: EarthLocation,
+                      location: EarthLocation = EarthLocation.from_geodetic(0, 0, 0),
                       time: Time = None):
         if time is None:
             time = Time(datetime.datetime.now(tz=datetime.UTC))
 
         sun = get_body('sun', time=time, location=location)
 
-        planets = pd.DataFrame(columns=self.stars.columns)
-
-        index = len(self.stars)
+        planets = []
         for name in self.PLANETS:
             body = get_body(name, time=time, location=location)
             sundist = body.hcrs.distance
             phase = body.separation(sun)
-            new_planet = pd.DataFrame(
+            planets.append(pd.DataFrame(
                 data=[
                     [
                         body.ra.degree,
@@ -59,18 +67,12 @@ class Catalogue:
                         -10
                     ]
                 ],
-                columns=self.stars.columns,
-                index=[index]
-            )
-            if len(planets) > 0:
-                planets = pd.concat([planets, new_planet])
-                index += 1
-            else:
-                planets = new_planet
+                columns=self.COLUMNS,
+            ))
 
-        self.planets = planets
-        self.planets_skycoord = SkyCoord(planets.ra.to_numpy() * u.deg,
-                                         planets.dec.to_numpy() * u.deg,
+        self.planets = pd.concat(planets)
+        self.planets_skycoord = SkyCoord(self.planets.ra.to_numpy() * u.deg,
+                                         self.planets.dec.to_numpy() * u.deg,
                                          frame=FK5(equinox=Time('J2000')))
 
     def radec(self,
@@ -79,19 +81,16 @@ class Catalogue:
               *,
               planets: bool = True,
               masked: bool) -> SkyCoord:
-        if self._populated:
-            if time is None:
-                time = Time(datetime.datetime.now(tz=datetime.UTC))
+        if time is None:
+            time = Time(datetime.datetime.now(tz=datetime.UTC))
 
-            if planets:
-                self.build_planets(location, time)
-                total = np.concatenate([self.stars_skycoord, self.planets_skycoord])
-            else:
-                total = self.stars_skycoord
-
-            return total[self.mask] if masked else total
+        if planets:
+            self.build_planets(location, time)
+            total = np.concatenate([self.planets_skycoord, self.stars_skycoord])
         else:
-            return SkyCoord([] * u.rad, [] * u.rad, frame=FK5(equinox=Time('J2000')))
+            total = self.stars_skycoord
+
+        return total[self.mask] if masked else total
 
     def altaz(self,
               location: EarthLocation,
@@ -120,7 +119,7 @@ class Catalogue:
         Optionally include planets.
         """
         self.build_planets(location, time)
-        vmags = pd.concat([self.stars, self.planets]).vmag.to_numpy()
+        vmags = pd.concat([self.planets, self.stars]).vmag.to_numpy(dtype=float)
         return vmags[self.mask] if masked else vmags
 
     @staticmethod
@@ -129,9 +128,9 @@ class Catalogue:
                           distance_sun: u.Quantity,
                           phase: Angle):
         """
-            Get the approximate visual magnitude of a planet.
-            Shamelessly stolen from APC, Montenbruck 1999
-        """
+        Get the approximate visual magnitude of a planet.
+        Shamelessly stolen from APC, Montenbruck 1999
+    """
         p = phase.degree / 100.0
 
         match planet:
