@@ -13,7 +13,7 @@ from numpy.ma.core import shape
 
 
 class Catalogue:
-    COLUMNS = ['ra', 'dec', 'dist', 'vmag', 'absmag']
+    COLUMNS = ['ra', 'dec', 'dist', 'vmag', 'absmag', 'name']
     PLANETS = ['mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune']
 
     def __init__(self, filename: Path = None):
@@ -64,7 +64,8 @@ class Catalogue:
                         body.dec.degree,
                         body.distance.to(u.lightyear).value,
                         self.planet_brightness(name, body.distance, sundist, phase),
-                        -10
+                        -10,
+                        name.title(),
                     ]
                 ],
                 columns=self.COLUMNS,

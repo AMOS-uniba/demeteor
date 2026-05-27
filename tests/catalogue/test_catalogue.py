@@ -10,7 +10,7 @@ from demeteor.catalogue import Catalogue
 
 @pytest.fixture
 def hyg30(ago):
-    hyg = Catalogue('tests/HYG30.tsv')
+    hyg = Catalogue('tests/HYG42.tsv')
     hyg.build_planets(ago)
     return hyg
 
@@ -28,10 +28,10 @@ class TestCatalogue:
         assert isinstance(hyg30, Catalogue)
 
     def test_can_count(self, hyg30):
-        assert hyg30.count == 5075
+        assert hyg30.count == 5077
 
     def test_with_planets(self, hyg30, ago):
-        assert len(hyg30.altaz(ago, masked=False)) == 5075
+        assert len(hyg30.altaz(ago, masked=False)) == 5077
 
     def test_polaris(self, hyg30, ago):
         altaz = hyg30.altaz(ago, masked=False)
@@ -54,7 +54,7 @@ class TestCatalogue:
 
     def test_vmag(self, hyg30, ago):
         vmag = hyg30.vmag(ago, masked=False)
-        assert vmag.shape == (5075,)
+        assert vmag.shape == (5077,)
         assert vmag[7] == pytest.approx(-1.45, abs=0.05)
 
     def test_altaz_is_a_skycoord(self, altaz):
