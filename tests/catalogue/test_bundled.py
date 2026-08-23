@@ -73,3 +73,39 @@ class TestTheOldFormatIsRefused:
     def test_it_says_what_it_wanted(self):
         with pytest.raises(AssertionError, match="name"):
             Catalogue(io.StringIO(self.OLD))
+
+
+class TestAttribution:
+    """
+    The catalogue is CC BY-SA 4.0, so the notice has to travel with the data.
+
+    Worth a test rather than trusting the build: if packaging ever stops including non-Python files
+    the data would go too and this would fail loudly, but a change that keeps the .tsv and drops
+    the .md would leave us redistributing someone's work without the attribution it requires.
+    """
+    @staticmethod
+    def notice() -> str:
+        from importlib import resources
+
+        return (resources.files('demeteor.catalogue')
+                .joinpath('data', 'README.md').read_text(encoding='utf-8'))
+
+    def test_it_ships_beside_the_data(self):
+        assert len(self.notice()) > 500
+
+    @pytest.mark.parametrize('required', [
+        'HYG',                                              # what it is
+        'astronexus',                                       # who made it
+        'CC BY-SA 4.0',                                     # under what terms
+        'creativecommons.org/licenses/by-sa/4.0',           # where to read them
+        'codeberg.org/astronexus/hyg',                       # where it came from
+    ])
+    def test_it_carries_what_the_licence_asks_for(self, required):
+        assert required in self.notice()
+
+    def test_it_says_the_file_was_modified(self):
+        """ BY-SA 4.0 3(a)(1)(B): indicate if you modified the material. This file is a subset. """
+        notice = self.notice()
+
+        assert 'modified' in notice.lower()
+        assert 'Changes made to it' in notice

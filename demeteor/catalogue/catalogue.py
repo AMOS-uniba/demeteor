@@ -18,7 +18,9 @@ class Catalogue:
     PLANETS = ['mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune']
 
     #: The catalogue that ships with demeteor: HYG 4.2 down to visual magnitude 6, which is roughly
-    #: what an all-sky camera sees, with proper names for the 384 stars that have one.
+    #: what an all-sky camera sees, with proper names for the 384 stars that have one. It is by
+    #: astronexus and licensed CC BY-SA 4.0 -- a copyleft, so anything adapted from it stays under
+    #: that licence. See data/README.md beside the file for the attribution and the changes made.
     #:
     #: It lives here rather than in each program that needs it because the column list above is an
     #: assertion, and a copy of the file kept somewhere else is a copy that can fall out of step
