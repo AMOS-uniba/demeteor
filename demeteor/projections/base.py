@@ -26,8 +26,9 @@ def normalise_angles(a0: float,
     a0, F and E are azimuths and take a whole turn. epsilon is a true zenith distance and takes
     half of one: reflecting it through the axis turns its azimuth around, so E picks up the half
     turn that epsilon gives up. That half turn is not optional -- flipping the sign of epsilon
-    without it moves the sky by 0.247 rad -- which is why this is a function of all four together
-    and cannot be done one parameter at a time.
+    without it moves the sky by roughly twice the zenith distance, which is 0.055 rad on a typical
+    all-sky plate and 2 rad on a badly aligned one -- which is why this is a function of all four
+    together and cannot be done one parameter at a time.
     """
     epsilon %= TAU
     if epsilon > math.pi:
