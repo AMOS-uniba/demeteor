@@ -156,7 +156,8 @@ class Catalogue:
         means nothing without it, and a caller that assumed stars came first would put the wrong
         name on every object it labelled.
 
-        A star with no proper name in the catalogue reads `unnamed`; the planets are capitalised.
+        A star with no proper name in the catalogue reads as an em dash; the planets are
+        capitalised.
         Unlike vmag() this does not rebuild the planets, because their names do not depend on where
         or when you look.
         """

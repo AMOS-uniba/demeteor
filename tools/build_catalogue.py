@@ -25,8 +25,9 @@ this replaces rather than written down anywhere:
   output stable: the unrounded product of a float by 15 runs to 17 digits on a third of the rows;
 * every other number is passed through exactly as HYG gives it;
 * rows are ordered brightest first;
-* a star with no proper name gets the literal `unnamed`, so that the column is never empty and
-  Catalogue's dtype for it stays a string;
+* a star with no proper name gets an em dash, so that the column is never empty and Catalogue's
+  dtype for it stays a string. A dash rather than a word because it is read as a label in a table,
+  where "unnamed" is noise repeated four thousand times;
 * the first line is a comment, and Catalogue reads the header from the second (`header=1`).
 
 The output is UTF-8. Some names are not ASCII -- Yunü -- and the previous file had that one
@@ -40,6 +41,9 @@ import pandas as pd
 #: Everything an all-sky camera has a chance of seeing
 MAGNITUDE_LIMIT = 6.0
 
+#: What stands in the name column for a star that has no proper name, which is most of them
+NO_NAME = '\u2014'
+
 
 def build(source: pathlib.Path) -> str:
     hyg = pd.read_csv(source)
@@ -51,7 +55,7 @@ def build(source: pathlib.Path) -> str:
         'dist': stars.dist,
         'vmag': stars.mag,
         'absmag': stars.absmag,
-        'name': stars.proper.fillna('unnamed'),
+        'name': stars.proper.fillna(NO_NAME),
     })
     return '#\n' + table.to_csv(sep='\t', index=False, lineterminator='\n')
 

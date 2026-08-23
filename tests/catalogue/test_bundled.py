@@ -12,6 +12,9 @@ import pytest
 
 from demeteor.catalogue import Catalogue
 
+#: What the catalogue puts where a star has no proper name
+NO_NAME = '\u2014'
+
 
 class TestBundled:
     def test_it_loads_without_being_told_where_it_is(self):
@@ -27,6 +30,13 @@ class TestBundled:
 
     def test_it_matches_the_columns_this_class_asserts_on(self):
         assert Catalogue.bundled().stars.columns.tolist() == Catalogue.COLUMNS
+
+    def test_the_nameless_are_marked_with_a_dash_rather_than_a_word(self):
+        """ Most stars have no proper name; a table of 4642 "unnamed" reads as noise. """
+        names = Catalogue.bundled().stars.name
+
+        assert (names == NO_NAME).sum() > 4000
+        assert 'unnamed' not in set(names)
 
     def test_it_reaches_naked_eye_magnitude(self):
         stars = Catalogue.bundled().stars
@@ -47,7 +57,7 @@ class TestBundled:
     def test_most_of_the_brightest_are_named(self):
         brightest = Catalogue.bundled().stars.nsmallest(30, 'vmag')
 
-        assert (brightest.name != 'unnamed').sum() >= 25
+        assert (brightest.name != NO_NAME).sum() >= 25
 
     def test_it_is_the_same_catalogue_every_time(self):
         assert len(Catalogue.bundled().stars) == len(Catalogue.bundled().stars)
