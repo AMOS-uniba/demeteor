@@ -17,16 +17,17 @@ class Catalogue:
     COLUMNS = ['ra', 'dec', 'dist', 'vmag', 'absmag', 'name']
     PLANETS = ['mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune']
 
-    #: The catalogue that ships with demeteor: HYG 4.2 down to visual magnitude 6, which is roughly
-    #: what an all-sky camera sees, with proper names for the 384 stars that have one. It is by
+    #: The catalogue that ships with demeteor: HYG 4.4 down to visual magnitude 6, which is roughly
+    #: what an all-sky camera sees, with proper names for the 428 stars that have one. It is by
     #: astronexus and licensed CC BY-SA 4.0 -- a copyleft, so anything adapted from it stays under
-    #: that licence. See data/README.md beside the file for the attribution and the changes made.
+    #: that licence. See data/README.md beside the file for the attribution and the changes made,
+    #: and tools/build_catalogue.py for how it is regenerated from a new HYG release.
     #:
     #: It lives here rather than in each program that needs it because the column list above is an
     #: assertion, and a copy of the file kept somewhere else is a copy that can fall out of step
     #: with it -- which is exactly what happened: adding `name` here broke every caller still
     #: shipping the five-column HYG 3.0 export, and each of them had its own.
-    BUNDLED = 'HYG42.tsv'
+    BUNDLED = 'HYG44.tsv'
 
     @classmethod
     def bundled(cls) -> 'Catalogue':

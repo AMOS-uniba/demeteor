@@ -34,12 +34,20 @@ class TestBundled:
         assert stars.vmag.max() == pytest.approx(6.0, abs=0.05)
         assert stars.vmag.min() < -1, "Sirius should be in there"
 
-    def test_the_bright_stars_are_named(self):
-        stars = Catalogue.bundled().stars
-        brightest = stars.nsmallest(20, 'vmag')
+    @pytest.mark.parametrize('star', ['Sirius', 'Canopus', 'Arcturus', 'Vega', 'Capella',
+                                      'Rigel', 'Betelgeuse', 'Procyon', 'Altair', 'Polaris'])
+    def test_the_stars_a_person_can_point_at_are_named(self, star):
+        """
+        Names are here to identify what is visible by eye, so the test is about those rather than
+        about a count. Not every bright row has one: the 0.96 entry 15 arcsec from Capella is its
+        companion, and HYG 4.4 gives the name to the primary and leaves the secondary blank.
+        """
+        assert star in set(Catalogue.bundled().stars.name)
 
-        assert (brightest.name != 'unnamed').all()
-        assert 'Sirius' in set(brightest.name)
+    def test_most_of_the_brightest_are_named(self):
+        brightest = Catalogue.bundled().stars.nsmallest(30, 'vmag')
+
+        assert (brightest.name != 'unnamed').sum() >= 25
 
     def test_it_is_the_same_catalogue_every_time(self):
         assert len(Catalogue.bundled().stars) == len(Catalogue.bundled().stars)
@@ -109,3 +117,26 @@ class TestAttribution:
 
         assert 'modified' in notice.lower()
         assert 'Changes made to it' in notice
+
+
+class TestEncoding:
+    """
+    The catalogue is UTF-8 and some names are not ASCII.
+
+    Worth pinning: the file this replaced carried `Yunü` as `YunÃ¼`, which is UTF-8 read as
+    Latin-1. It survives a build only if every step -- reading HYG, writing the tsv, reading it
+    back -- agrees on the encoding, and none of them says so out loud.
+    """
+    def test_a_non_ascii_name_survives(self):
+        names = set(Catalogue.bundled().stars.name)
+
+        assert 'Yunü' in names
+
+    def test_and_is_not_mojibaked(self):
+        names = set(Catalogue.bundled().stars.name)
+
+        assert 'YunÃ¼' not in names
+
+    def test_every_name_decodes(self):
+        for name in Catalogue.bundled().stars.name:
+            assert isinstance(name, str), name
