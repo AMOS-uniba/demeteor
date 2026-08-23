@@ -2,7 +2,7 @@ import numpy as np
 from typing import Union
 from numpy.typing import ArrayLike
 
-from .base import Projection
+from .base import normalise_angles, Projection
 from .shifters import TiltShifter
 from .transformers import BiexponentialTransformer
 from .zenith import ZenithShifter
@@ -23,7 +23,7 @@ class BorovickaProjection(Projection):
         (None, None),  # D
         (None, None),  # P
         (None, None),  # Q
-        (0, None),     # epsilon
+        (None, None),  # epsilon -- unbounded on purpose, see normalised()
         (None, None),  # E
     ))
     name = 'Borovička'
@@ -74,6 +74,18 @@ class BorovickaProjection(Projection):
             self.radial_transform.P, self.radial_transform.Q,
             self.zenith_shifter.epsilon, self.zenith_shifter.E,
         )
+
+    def normalised(self) -> 'BorovickaProjection':
+        """
+        The same projection with its angles wrapped into range. See base.normalise_angles.
+
+        Unpacked by name rather than by index: this class and its neighbours happen to carry their
+        angles at the same positions of as_tuple(), and relying on that is how a parameter ends up
+        read from the wrong slot.
+        """
+        x0, y0, a0, A, F, V, S, D, P, Q, epsilon, E = self.as_tuple()
+        a0, F, epsilon, E = normalise_angles(a0, F, epsilon, E)
+        return BorovickaProjection(x0, y0, a0, A, F, V, S, D, P, Q, epsilon, E)
 
     @classmethod
     def from_dotmap(cls, dm):

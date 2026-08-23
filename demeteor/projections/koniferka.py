@@ -4,7 +4,7 @@ import yaml
 from typing import Union
 from numpy.typing import NDArray
 
-from .base import Projection
+from .base import normalise_angles, Projection
 from .shifters import TiltShifter
 from .transformers import SaneBiexponentialTransformer
 from .zenith import ZenithShifter
@@ -28,7 +28,7 @@ class KoniferkaProjection(Projection):
         (None, None),  # p_1
         (None, None),  # k_2
         (None, None),  # p_2
-        (0, None),     # epsilon
+        (None, None),  # epsilon -- unbounded on purpose, see normalised()
         (None, None),  # E
     ))
     name = 'Koniferka'
@@ -87,6 +87,18 @@ class KoniferkaProjection(Projection):
             self.radial_transform.p2, self.radial_transform.r2,
             self.zenith_shifter.epsilon, self.zenith_shifter.E,
         )
+
+    def normalised(self) -> 'KoniferkaProjection':
+        """
+        The same projection with its angles wrapped into range. See base.normalise_angles.
+
+        Unpacked by name rather than by index: this class and its neighbours happen to carry their
+        angles at the same positions of as_tuple(), and relying on that is how a parameter ends up
+        read from the wrong slot.
+        """
+        x0, y0, a0, A, F, V, p1, r1, p2, r2, epsilon, E = self.as_tuple()
+        a0, F, epsilon, E = normalise_angles(a0, F, epsilon, E)
+        return KoniferkaProjection(x0, y0, a0, A, F, V, p1, r1, p2, r2, epsilon, E)
 
     @classmethod
     def from_dotmap(cls, dm):

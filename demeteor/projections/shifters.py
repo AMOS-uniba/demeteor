@@ -19,7 +19,9 @@ class Shifter:
         return nx + self.x0, ny + self.y0
 
     def as_dict(self) -> dict[str, float]:
-        return dict(x=self.x0, y=self.y0)
+        # x0/y0 and not x/y: this dict is fed straight back to __init__ by Projection.from_dict(),
+        # and from_dotmap() reads the same names. Every stored calibration file has x0/y0.
+        return dict(x0=self.x0, y0=self.y0)
 
 
 class ScalingShifter(Shifter):

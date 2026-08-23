@@ -1,3 +1,5 @@
+import math
+
 import dotmap
 import numpy as np
 from typing import Tuple, Any
@@ -5,6 +7,35 @@ from typing import Tuple, Any
 from abc import ABC, abstractmethod
 
 import yaml
+
+
+TAU = 2 * math.pi
+
+
+def normalise_angles(a0: float,
+                     F: float,
+                     epsilon: float,
+                     E: float) -> tuple[float, float, float, float]:
+    """
+    Bring the angles of a tilt-and-zenith-shifted projection into the range they mean, in radians.
+
+    A fit is unconstrained: scipy walks these wherever it likes and nothing wraps them afterwards,
+    so the same plate can come back as a0 = 12.7 rad or epsilon = -0.014. Every rewrite here leaves
+    the projection pointing at exactly the same sky.
+
+    a0, F and E are azimuths and take a whole turn. epsilon is a true zenith distance and takes
+    half of one: reflecting it through the axis turns its azimuth around, so E picks up the half
+    turn that epsilon gives up. That half turn is not optional -- flipping the sign of epsilon
+    without it moves the sky by 0.247 rad -- which is why this is a function of all four together
+    and cannot be done one parameter at a time.
+    """
+    epsilon %= TAU
+    if epsilon > math.pi:
+        epsilon, half_turn = TAU - epsilon, math.pi
+    else:
+        half_turn = 0.0
+
+    return a0 % TAU, F % TAU, epsilon, (E + half_turn) % TAU
 
 
 class Projection(ABC):
@@ -36,6 +67,16 @@ class Projection(ABC):
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
         Projection._registry[cls.name] = cls
+
+    def normalised(self):
+        """
+        An equivalent projection with its angles in the range they mean.
+
+        The default is for projections that have no angles to normalise; anything built on a tilt
+        shifter and a zenith shifter overrides it. Never mutates: a fit result is worth keeping as
+        it came out, and the caller decides what to do with either form.
+        """
+        return self
 
     @classmethod
     def from_dict(cls,
