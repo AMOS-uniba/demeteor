@@ -7,6 +7,21 @@ but I thought it also had a nice ring on its own. And it was also free on `pypi`
 Not to be confused with [demetria](https://github.com/sesquideus/demetria/), my own library
 for working with 2D scalar and vector fields.
 
+## Licence
+
+demeteor is free software: you may redistribute it and modify it under the terms of the **GNU Lesser
+General Public License, version 3 or later**, as published by the Free Software Foundation. The full
+texts are in [`COPYING.LESSER`](COPYING.LESSER) and [`COPYING`](COPYING) — the LGPL is a set of
+additional permissions on top of the GPL, so both belong here.
+
+It is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
+implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+Being the *Lesser* GPL, importing demeteor puts no licensing obligation on the program that imports
+it; modifying demeteor itself does.
+
+**The bundled star catalogue is not covered by that licence.** See below.
+
 ## Bundled star catalogue
 
 `Catalogue.bundled()` returns a subset of the [HYG star database](https://codeberg.org/astronexus/hyg)
