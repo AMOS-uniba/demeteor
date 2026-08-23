@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "demeteor"
-version = "0.2.0"
+version = "0.2.1"
 description = "A collection of utility functions for all-sky and spectral meteor cameras"
 authors = ["Martin Odokienko <martin.balaz@fmph.uniba.sk>"]
 readme = "README.md"

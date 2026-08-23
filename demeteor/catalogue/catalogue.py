@@ -1,4 +1,5 @@
 import datetime
+from importlib import resources
 from typing import Any, Optional
 
 import numpy as np
@@ -15,6 +16,26 @@ from numpy.ma.core import shape
 class Catalogue:
     COLUMNS = ['ra', 'dec', 'dist', 'vmag', 'absmag', 'name']
     PLANETS = ['mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune']
+
+    #: The catalogue that ships with demeteor: HYG 4.2 down to visual magnitude 6, which is roughly
+    #: what an all-sky camera sees, with proper names for the 384 stars that have one.
+    #:
+    #: It lives here rather than in each program that needs it because the column list above is an
+    #: assertion, and a copy of the file kept somewhere else is a copy that can fall out of step
+    #: with it -- which is exactly what happened: adding `name` here broke every caller still
+    #: shipping the five-column HYG 3.0 export, and each of them had its own.
+    BUNDLED = 'HYG42.tsv'
+
+    @classmethod
+    def bundled(cls) -> 'Catalogue':
+        """
+        The catalogue shipped with demeteor, whatever the working directory is.
+
+        Read as a stream rather than by path so that it also works from a zipped install, where
+        there is no file on disk to point at.
+        """
+        with resources.files(__package__).joinpath('data', cls.BUNDLED).open('rb') as handle:
+            return cls(handle)
 
     def __init__(self, filename: Path = None):
         self.planets = []

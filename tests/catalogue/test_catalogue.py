@@ -10,7 +10,7 @@ from demeteor.catalogue import Catalogue
 
 @pytest.fixture
 def hyg30(ago):
-    hyg = Catalogue('tests/HYG42.tsv')
+    hyg = Catalogue.bundled()
     hyg.build_planets(ago)
     return hyg
 
