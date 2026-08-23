@@ -80,6 +80,6 @@ class BorovickaProjection(Projection):
         return cls(
             dm.x0, dm.y0, dm.a0,
             dm.A, dm.F,
-            dm.V, dm.S, dm.D, dm.S, dm.Q,
+            dm.V, dm.S, dm.D, dm.P, dm.Q,
             dm.epsilon, dm.E,
         )

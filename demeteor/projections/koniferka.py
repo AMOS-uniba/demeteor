@@ -84,7 +84,7 @@ class KoniferkaProjection(Projection):
             self.axis_shifter.A, self.axis_shifter.F,
             self.radial_transform.V,
             self.radial_transform.p1, self.radial_transform.r1,
-            self.radial_transform.p1, self.radial_transform.r2,
+            self.radial_transform.p2, self.radial_transform.r2,
             self.zenith_shifter.epsilon, self.zenith_shifter.E,
         )
 
