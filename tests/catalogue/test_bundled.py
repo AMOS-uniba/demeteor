@@ -140,3 +140,47 @@ class TestEncoding:
     def test_every_name_decodes(self):
         for name in Catalogue.bundled().stars.name:
             assert isinstance(name, str), name
+
+
+class TestNames:
+    """
+    Naming an object by its index into the catalogue.
+
+    The index space is planets first and then stars, which is not obvious and is exactly the sort
+    of thing a caller gets wrong: vasco pairs a sensor star with an index into `mask`, and a lookup
+    that assumed stars came first would label every one of them wrongly.
+    """
+    def test_it_is_as_long_as_the_catalogue(self):
+        catalogue = Catalogue.bundled()
+
+        assert len(catalogue.names(masked=False)) == catalogue.count
+
+    def test_the_planets_come_first(self):
+        names = Catalogue.bundled().names(masked=False)
+
+        assert list(names[:len(Catalogue.PLANETS)]) == [p.title() for p in Catalogue.PLANETS]
+
+    def test_the_stars_follow_in_magnitude_order(self):
+        catalogue = Catalogue.bundled()
+        names = catalogue.names(masked=False)
+
+        assert names[len(Catalogue.PLANETS)] == 'Sirius'
+
+    def test_it_lines_up_with_the_magnitudes(self):
+        """ The two are read together, so an off-by-seven in either would show up here. """
+        from astropy.coordinates import EarthLocation
+        import astropy.units as u
+
+        catalogue = Catalogue.bundled()
+        where = EarthLocation(17.27 * u.deg, 48.37 * u.deg, 531 * u.m)
+        names = catalogue.names(masked=False)
+        vmags = catalogue.vmag(where, masked=False)
+
+        assert len(names) == len(vmags)
+        brightest_star = vmags[len(Catalogue.PLANETS):].argmin() + len(Catalogue.PLANETS)
+        assert names[brightest_star] == 'Sirius'
+
+    def test_masking_shortens_it(self):
+        catalogue = Catalogue.bundled()
+
+        assert len(catalogue.names(masked=True)) <= len(catalogue.names(masked=False))

@@ -147,6 +147,22 @@ class Catalogue:
         vmags = pd.concat([self.planets, self.stars]).vmag.to_numpy(dtype=float)
         return vmags[self.mask] if masked else vmags
 
+    def names(self, *, masked: bool) -> np.ndarray:
+        """
+        Return the names of all objects, in the same order as vmag() and radec().
+
+        Planets first and then stars, which is the order everything else in this class uses and
+        the reason this lives here rather than in the callers: an index into `mask` or `count`
+        means nothing without it, and a caller that assumed stars came first would put the wrong
+        name on every object it labelled.
+
+        A star with no proper name in the catalogue reads `unnamed`; the planets are capitalised.
+        Unlike vmag() this does not rebuild the planets, because their names do not depend on where
+        or when you look.
+        """
+        names = pd.concat([self.planets, self.stars]).name.to_numpy()
+        return names[self.mask] if masked else names
+
     @staticmethod
     def planet_brightness(planet: str,
                           distance_earth: u.Quantity,
