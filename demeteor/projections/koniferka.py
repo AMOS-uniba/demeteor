@@ -46,27 +46,17 @@ class KoniferkaProjection(Projection):
     def __call__(self,
                  x: Union[float, np.ndarray],
                  y: Union[float, np.ndarray]) -> tuple[np.ndarray, np.ndarray]:
-        print("Forward")
-        print(f"{x=}, {y=}")
         r, b = self.axis_shifter(x, y)
-        print(f"{r=}")
         u = self.radial_transform(r)
-        print(f"{u=}, {b=}")
         z, a = self.zenith_shifter(u, b)
-        print(f"{z=}, {a=}")
         return z, a
 
     def invert(self,
                z: NDArray[np.floating],
                a: NDArray[np.floating]) -> tuple[NDArray[np.floating], NDArray[np.floating]]:
-        print("Inverted")
-        print(f"{z=}, {a=}")
         u, b = self.zenith_shifter.invert(z, a)
-        print(f"{u=}, {b=}")
         r = self.radial_transform.invert(u)
-        print(f"{r=}")
         x, y = self.axis_shifter.invert(r, b)
-        print(f"{x=}, {y=}")
         return x, y
 
     def __str__(self):
