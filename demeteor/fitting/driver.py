@@ -27,7 +27,7 @@ from astropy.time import Time
 from demeteor.catalogue import Catalogue
 from demeteor.projections import BorovickaProjection
 from demeteor.sensor import DotCollection, SensorData, mask_sparse
-from demeteor.matching import Matcher
+from demeteor.matching import Matcher, NothingToPair
 from demetria.correctors import bandwidth as bandwidth_selection
 
 JOB_FORMAT = 'amos-fit-job/1'
@@ -163,6 +163,15 @@ def mask(matcher: Matcher, options: dict) -> None:
     Two limits, both in degrees. `mask_low` drops dots the plate puts near or below the horizon,
     where refraction is large and the roof is in the way. `mask_distant` drops catalogue stars that
     no dot came near, so that the pairing cannot reach for one halfway across the sky.
+
+    Either can empty its side out, and both are the job being impossible rather than the fit
+    failing: `min_stars` is checked before this runs and counts the dots a job *arrived* with.
+
+    Raises:
+        JobError: if `mask_low` leaves no dot, or if `mask_distant` leaves no catalogue star at all. That is not a fit that failed,
+            it is a baseline that puts the whole sensor further from the sky than the limit allows,
+            so it says which limit and how far out the nearest star actually was -- the number a
+            caller needs to tell "the plate is stale" from "the limit is too tight".
     """
     if (low := options['mask_low']) is not None:
         altitudes = matcher.sensor_data.stars.project(matcher.projection, masked=True,
@@ -172,10 +181,24 @@ def mask(matcher: Matcher, options: dict) -> None:
         log.info(f"above {low}: {matcher.sensor_data.stars.count_visible} of "
                  f"{matcher.sensor_data.stars.count} dots")
 
+        if matcher.sensor_data.stars.count_visible == 0:
+            raise JobError(
+                f"every one of the {matcher.sensor_data.stars.count} dots is below "
+                f"mask_low={low} degrees by this plate, so there is nothing left to fit"
+            )
+
     if (distant := options['mask_distant']) is not None:
         nearest = np.min(matcher.distance_sky_all(masked=True), axis=0)
-        matcher.mask_catalogue(
-            mask_sparse(matcher.catalogue, nearest < math.radians(distant)))
+        try:
+            matcher.mask_catalogue(
+                mask_sparse(matcher.catalogue, nearest < math.radians(distant)))
+        except NothingToPair as exc:
+            closest = math.degrees(np.min(nearest)) if nearest.size else float('nan')
+            raise JobError(
+                f"no catalogue star is within mask_distant={distant} degrees of any dot -- the "
+                f"nearest is {closest:.3g} degrees away -- so the baseline plate is too far out "
+                f"for this frame to be fitted from"
+            ) from exc
         log.info(f"within {distant} of a dot: {matcher.catalogue.count_visible} of "
                  f"{matcher.catalogue.count} catalogue objects")
 
@@ -193,15 +216,15 @@ def optimise(matcher: Matcher, start: BorovickaProjection, options: dict) -> Bor
     aeroplane. Without it one dot that is not a star pairs with whatever star is nearest and pulls
     the whole plate towards it -- and there is no one here to notice.
 
-    **This does not converge from a badly wrong baseline, and that is worth knowing.** The pairing
-    is only ever recomputed as a side effect of a clipping round, and a fit whose residual is large
-    but uniform clips nothing -- so it breaks out after one round and never re-pairs, settling into
-    a local minimum with some dots on the wrong stars. Measured on synthetic dots built from a known
+    **A usable baseline is a precondition, not something this recovers from.** Twelve parameters
+    over a whole sky is too large a space to search blind, and a plate is never actually unknown --
+    a camera that has been pointed at the sky has been fitted once, and that fit is the starting
+    point. So this refines; it does not discover. Measured on synthetic dots built from a known
     plate: started 1.5 degrees out it lands at 0.83 degrees and stays there whether given 4000
-    iterations or 20000. A pre-fit before pairing halves it. Re-pairing between rounds regardless of
-    clipping would be the fix, and it is deliberately not done here, because this function was moved
-    out of vasco unchanged and changing what it computes belongs in its own commit.
-    tests/fitting/test_driver.py pins the present behaviour so that a change to it is visible.
+    iterations or 20000, because the pairing is only recomputed as a side effect of a clipping
+    round, and a residual that is large but uniform clips nothing. A pre-fit before pairing
+    (`pre_iterations`) halves it and is there for a baseline one does not quite trust.
+    tests/fitting/test_driver.py pins this so that a change to it is visible rather than a surprise.
     """
     projection = start
 

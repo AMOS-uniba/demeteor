@@ -97,8 +97,7 @@ class TestItRecoversThePlate:
 
     def test_a_drifted_baseline_is_improved_but_not_recovered(self, stars):
         """
-        This is a limitation, pinned rather than hidden, and it matters because a drifted plate is
-        the whole reason to refit one.
+        Where the method's reach ends, pinned so that moving it is visible.
 
         Started 1.5 degrees out in a0 and 2% out in V, the fit lands at about 0.8 degrees and stays
         there: 4000 iterations and 20000 give the same number to five places, so it is not an
@@ -107,9 +106,10 @@ class TestItRecoversThePlate:
         exceeds sigma_clip times the RMS, so it breaks out after one round and never re-pairs. A
         pre-fit before pairing (`pre_iterations`) roughly halves it, to 0.35.
 
-        Two things would fix it and both are changes to the algorithm rather than to its housing:
-        re-pair between rounds whether or not anything was clipped, and loosen mask_distant while
-        the baseline is still far off. See the note in that method.
+        1.5 degrees is a deliberately unreasonable start. Twelve parameters over a whole sky do not
+        get searched blind, and no real caller starts blind: a camera that has been pointed at the
+        sky has been fitted once. What this pins is the size of the drift the refinement tolerates,
+        not a defect waiting on a fix.
         """
         wrong = dict(TRUTH, a0=TRUTH['a0'] + 1.5, v=TRUTH['v'] * 1.02)
 
@@ -123,10 +123,12 @@ class TestItRecoversThePlate:
     def test_masking_distant_stars_assumes_the_baseline_is_already_close(self, stars):
         """
         mask_distant drops catalogue stars that no dot came near, which keeps the pairing from
-        reaching across the sky -- and silently requires the starting plate to be within about that
-        distance. At the default half a degree, a baseline 1.5 degrees out fits to 12 degrees; at
-        two degrees, to 0.8. So the setting that protects a good baseline defeats a bad one, which
-        is the case a refit exists for.
+        reaching across the sky -- and requires the starting plate to be within about that distance.
+        At the default half a degree, a baseline 1.5 degrees out fits to 12 degrees; at two degrees,
+        to 0.8. Worth knowing when reading a bad result: the limit that protects a good baseline is
+        also what a bad one runs into first, and past a point it removes the catalogue entirely,
+        which is a JobError rather than a poor fit. TestTheCatalogueCanBeMaskedToNothing covers that
+        end.
         """
         wrong = dict(TRUTH, a0=TRUTH['a0'] + 1.5, v=TRUTH['v'] * 1.02)
 
@@ -135,6 +137,57 @@ class TestItRecoversThePlate:
 
         assert tight['residual_rms'] > 5.0
         assert loose['residual_rms'] < 1.0
+
+
+class TestTheCatalogueCanBeMaskedToNothing:
+    """
+    The one way a plate too far out crashed rather than complained.
+
+    `mask_distant` keeps the catalogue stars some dot came near. Far enough out, that is none of
+    them, and pairing 58 dots against an empty catalogue used to raise
+    `IndexError: index -1 is out of bounds for axis 0 with size 0` from two layers down in Matcher
+    -- an empty array indexed with a sentinel that nothing consumed. It is a job that cannot be
+    done, so it says so.
+    """
+
+    #: Far enough that no catalogue star is within any sensible mask_distant of any dot, without
+    #: being so far that the sensor leaves the sky altogether.
+    HOPELESS = dict(TRUTH, a0=TRUTH['a0'] + 40.0)
+
+    def test_it_is_a_job_error_and_not_an_index_error(self, stars):
+        with pytest.raises(JobError):
+            fit(job_for(stars, self.HOPELESS, mask_distant=0.05))
+
+    def test_it_says_which_limit_and_how_far_out_it_actually_was(self, stars):
+        """ The two numbers that separate "the plate is stale" from "the limit is too tight". """
+        with pytest.raises(JobError, match=r'mask_distant=0\.05') as caught:
+            fit(job_for(stars, self.HOPELESS, mask_distant=0.05))
+
+        assert 'nearest' in str(caught.value)
+
+    def test_without_the_limit_the_same_baseline_merely_fits_badly(self, stars):
+        """
+        The guard is the mask's, not the fit's: hopeless is allowed to be hopeless. This is what
+        tells the two apart, and it is why the refusal names mask_distant rather than the baseline.
+        """
+        report = fit(job_for(stars, self.HOPELESS, mask_distant=None))['reductions'][0]['fit']
+
+        assert report['residual_rms'] > 1.0
+
+    def test_the_dots_can_empty_out_the_same_way(self, stars):
+        """
+        The mirror case, one line earlier in mask(): mask_low can drop every dot, and then the very
+        next statement reduced an empty axis and raised ValueError. min_stars does not catch it --
+        that counts the dots the job arrived with, before any mask.
+        """
+        with pytest.raises(JobError, match=r'mask_low=89\.5'):
+            fit(job_for(stars, dict(TRUTH), mask_low=89.5))
+
+    def test_a_generous_limit_keeps_stars_and_does_not_raise(self, stars):
+        """ So that the guard cannot be satisfied by refusing everything. """
+        report = fit(job_for(stars, dict(TRUTH), mask_distant=0.5))['reductions'][0]['fit']
+
+        assert report['residual_rms'] < 1e-6
 
 
 class TestTheDocument:

@@ -23,6 +23,18 @@ from demeteor.sensor import (SensorData, altaz_to_disk, disk_to_altaz, numpy_to_
 log = logging.getLogger('demeteor')
 
 
+class NothingToPair(ValueError):
+    """
+    There are no catalogue objects left to pair the dots with.
+
+    Almost always a mask that went too far: `mask_distant` dropping every star because the plate it
+    was judged against is too far out, or a magnitude limit set below the faintest thing in the sky.
+    Raised rather than tolerated because every quantity downstream of a pairing -- the residuals, the
+    fit, the smoothers -- is meaningless without one, and an empty pairing would travel a long way
+    before anything noticed.
+    """
+
+
 class Matcher:
     """
     The base class for matching sensor data to the catalogue.
@@ -80,6 +92,20 @@ class Matcher:
         return self.catalogue is not None and self.sensor_data is not None
 
     def mask_catalogue(self, mask):
+        """
+        Narrow the catalogue, refusing to narrow it to nothing.
+
+        Checked before the mask is applied, so a refusal leaves the matcher exactly as it was rather
+        than half-masked and unusable. It used to apply the mask and then fail inside
+        update_pairing with an IndexError about an empty array.
+        """
+        if not np.any(self.catalogue.mask & mask):
+            raise NothingToPair(
+                f"That mask would leave none of the {self.catalogue.count} catalogue objects "
+                f"visible, and there would be nothing to pair the "
+                f"{self.sensor_data.stars.count_visible} dots with"
+            )
+
         self.catalogue.mask &= mask
         self.invalidate_altaz()
         self.update_pairing()
@@ -168,22 +194,42 @@ class Matcher:
         cat = np.expand_dims(cat, 0)
         dist = spherical(obs, cat)
 
-        if dist.size > 0:
-            pairing = np.argmin(dist, axis=1)
-        else:
-            empty = np.empty(shape=(dist.shape[0]), dtype=int)
-            empty[...] = -1
-            pairing = empty
+        # Two ways to be empty, and they are not the same thing. No dots is a frame with nothing in
+        # it, which is ordinary and pairs with nothing; no catalogue is a mask that went too far,
+        # and there is no answer to give. This used to return -1 for every dot in the second case,
+        # which nothing consumes correctly -- update_pairing indexed an empty array with it and
+        # raised IndexError, and had the array not been empty it would have silently paired every
+        # dot with the last object in the catalogue.
+        if cat.shape[1] == 0:
+            raise NothingToPair(
+                f"No catalogue objects are visible, so the {obs.shape[0]} dots cannot be paired"
+            )
 
+        if obs.shape[0] == 0:
+            log.debug("No dots to pair")
+            return np.empty(shape=(0,), dtype=int)
+
+        pairing = np.argmin(dist, axis=1)
         log.debug(f"Computed the pairing {pairing.shape}")
 
         return pairing
 
     def update_pairing(self) -> None:
         """
-        Compute the current pairing and use it from now on
+        Compute the current pairing and use it from now on.
+
+        Raises:
+            NothingToPair: if the catalogue has been masked down to nothing. The check is here as
+                well as in mask_catalogue because `catalogue.mask` is a plain attribute and can be
+                assigned without going through it.
         """
         idx = np.arange(self.catalogue.count)[self.catalogue.mask]
+        if idx.size == 0:
+            raise NothingToPair(
+                f"None of the {self.catalogue.count} catalogue objects is visible, so there is "
+                f"nothing to pair the {self.sensor_data.stars.count_visible} dots with"
+            )
+
         self.pairing = idx[self.compute_pairing()]
         log.debug(f"Updated the pairing {self.pairing.shape}")
 

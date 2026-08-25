@@ -15,7 +15,7 @@ from astropy.coordinates import EarthLocation
 from astropy.time import Time
 
 from demeteor.catalogue import Catalogue
-from demeteor.matching import Matcher
+from demeteor.matching import Matcher, NothingToPair
 from demeteor.projections import BorovickaProjection
 from demeteor.sensor import DotCollection, SensorData
 
@@ -151,6 +151,67 @@ class TestMasking:
         matcher.mask_sensor_data(keep)
 
         assert matcher.position_errors_sky().size == len(indices) - 1
+
+    def test_masking_the_catalogue_to_nothing_is_refused(self, bright):
+        """
+        There is no answer to give, so it says so. It used to apply the mask and then raise
+        `IndexError: index -1 is out of bounds for axis 0 with size 0` from update_pairing, which
+        names an array rather than the mistake.
+        """
+        indices, altaz = bright
+        matcher = matcher_for(indices, altaz)
+
+        with pytest.raises(NothingToPair):
+            matcher.mask_catalogue(np.zeros(matcher.catalogue.count, dtype=bool))
+
+    def test_and_the_refusal_leaves_the_matcher_as_it_was(self, bright):
+        """
+        Why the check is before the mask and not after: a caller that catches this -- the window,
+        where the mask is a slider a person is dragging -- has a matcher it can still use.
+        """
+        indices, altaz = bright
+        matcher = matcher_for(indices, altaz)
+        before = list(matcher.pairing)
+
+        with pytest.raises(NothingToPair):
+            matcher.mask_catalogue(np.zeros(matcher.catalogue.count, dtype=bool))
+
+        assert matcher.catalogue.count_visible > 0
+        assert list(matcher.pairing) == before
+
+    def test_a_mask_that_only_overlaps_nothing_is_refused_too(self, bright):
+        """
+        The mask is intersected with the one already there, so a mask with bits set can still leave
+        nothing -- and that is the shape mask_distant arrives in.
+        """
+        indices, altaz = bright
+        matcher = matcher_for(indices, altaz)
+
+        first = np.zeros(matcher.catalogue.count, dtype=bool)
+        first[indices] = True
+        matcher.mask_catalogue(first)
+
+        disjoint = np.zeros(matcher.catalogue.count, dtype=bool)
+        disjoint[[index for index in range(matcher.catalogue.count) if index not in set(indices)]] \
+            = True
+        with pytest.raises(NothingToPair):
+            matcher.mask_catalogue(disjoint)
+
+    def test_masking_every_dot_away_is_allowed_and_is_not_the_same_thing(self, bright):
+        """
+        The other empty, and it is not symmetric. An empty catalogue has no answer; no *visible*
+        dots does -- the answer is that no residual is being measured. Note where the asymmetry
+        comes from: compute_pairing projects with masked=False, so the sensor mask never shrinks the
+        pairing. Every dot keeps its star whether it is in the fit or not, and masking only shows up
+        where the residuals are taken.
+        """
+        indices, altaz = bright
+        matcher = matcher_for(indices, altaz)
+
+        matcher.mask_sensor_data(np.zeros(matcher.sensor_data.stars.count, dtype=bool))
+
+        assert matcher.pairing.size == len(indices), "one per dot, masked or not"
+        assert matcher.position_errors_sky().size == 0, "but nothing is being measured"
 
 
 class TestTheFit:

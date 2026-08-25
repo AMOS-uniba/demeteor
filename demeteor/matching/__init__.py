@@ -11,6 +11,6 @@ match state and the fitting operations want separating, and `_calibration` wants
 rather than an attribute. Moved as it was so that every existing caller kept working -- the window,
 the plots and all three exporters hold one of these.
 """
-from .matcher import Matcher
+from .matcher import Matcher, NothingToPair
 
-__all__ = ['Matcher']
+__all__ = ['Matcher', 'NothingToPair']
