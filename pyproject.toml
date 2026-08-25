@@ -1,19 +1,24 @@
 [tool.poetry]
 name = "demeteor"
-version = "0.2.4"
+version = "0.3.0"
 description = "A collection of utility functions for all-sky and spectral meteor cameras"
 authors = ["Martin Odokienko <martin.balaz@fmph.uniba.sk>"]
 readme = "README.md"
 license = "LGPL-3.0-or-later"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+# 3.14, as the rest of the ecosystem is: demetria 0.2.0 requires it, vamos and the AMOS server both
+# run it. A floor of 3.11 here could not be honoured anyway once demetria became a dependency.
+python = "^3.14"
 numpy = "*"
 scipy = "*"
 pyyaml = "*"
 dotmap = "*"
 pandas = "*"
 astropy = "*"
+# The kernel smoother the plate correction is built from, and the bandwidth selection that decides
+# how smooth it is. One way: demetria knows nothing about cameras or the sky.
+demetria = ">=0.2.0"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^9.0.3"

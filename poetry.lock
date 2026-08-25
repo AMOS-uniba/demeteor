@@ -68,6 +68,25 @@ files = [
 ]
 
 [[package]]
+name = "demetria"
+version = "0.2.0"
+description = "A minimalistic package for manipulating 2D scalar and vector fields."
+optional = false
+python-versions = "<4.0,>=3.14"
+groups = ["main"]
+files = [
+    {file = "demetria-0.2.0-py3-none-any.whl", hash = "sha256:7e03c6a3537656d40782c7475927116ce53314b74f745d508c9aeddb277ed67f"},
+    {file = "demetria-0.2.0.tar.gz", hash = "sha256:c33768a12a0c9f74c46f9306ac8e27cb6c44bfbad05ad4cae98c732c0b7789e5"},
+]
+
+[package.dependencies]
+numpy = "*"
+scipy = "*"
+
+[package.extras]
+plots = ["matplotlib"]
+
+[[package]]
 name = "dotmap"
 version = "1.3.30"
 description = "ordered, dynamically-expandable dot-access dictionary"
@@ -244,10 +263,7 @@ files = [
 ]
 
 [package.dependencies]
-numpy = [
-    {version = ">=1.26.0", markers = "python_version < \"3.14\""},
-    {version = ">=2.3.3", markers = "python_version >= \"3.14\""},
-]
+numpy = {version = ">=2.3.3", markers = "python_version >= \"3.14\""}
 python-dateutil = ">=2.8.2"
 tzdata = {version = "*", markers = "sys_platform == \"win32\" or sys_platform == \"emscripten\""}
 
@@ -562,5 +578,5 @@ files = [
 
 [metadata]
 lock-version = "2.1"
-python-versions = "^3.11"
-content-hash = "a9f47b068b87bcab6a66722a9b85d9160c54139cabc8e335714d4d5ed224c2da"
+python-versions = "^3.14"
+content-hash = "1bf4dfb625f50ea20286bf3a28e851b5e394f318760bb471a1483e0dede533c5"
