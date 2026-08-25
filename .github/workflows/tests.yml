@@ -1,0 +1,44 @@
+# A library, so it is installed and tested the way anything that depends on it will get it: from
+# this source tree against current releases of its dependencies, not against the lockfile. The lock
+# is a convenience for working here; what breaks a dependent is a new numpy, and this is where that
+# should show up first.
+name: tests
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          # The floor in pyproject.toml. demetria requires it too, and the whole ecosystem runs it.
+          python-version: "3.14"
+          cache: pip
+
+      # Editable, so that pytest imports the source tree rather than a built copy of it while pip
+      # resolves the dependencies. pytest is in the `test` group, which pip cannot read out of a
+      # poetry project, so it is named here.
+      - name: Install the project
+        run: pip install -e . pytest
+
+      - name: Lint for the errors that are errors
+        run: pipx run ruff check --select=E9,F63,F7,F82 .
+
+      # Advisory. This tree has plenty of unsorted imports and no ruff configuration to say which
+      # of that it cares about, so the findings are annotations on the diff and not a red build.
+      - name: Lint for everything else, without failing
+        run: pipx run ruff check --output-format=github --exit-zero .
+
+      - name: Test
+        run: pytest -q
