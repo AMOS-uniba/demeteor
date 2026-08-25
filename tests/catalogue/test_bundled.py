@@ -178,13 +178,17 @@ class TestNames:
 
     def test_it_lines_up_with_the_magnitudes(self):
         """ The two are read together, so an off-by-seven in either would show up here. """
-        from astropy.coordinates import EarthLocation
+        import datetime
+
         import astropy.units as u
+        from astropy.coordinates import EarthLocation
+        from astropy.time import Time
 
         catalogue = Catalogue.bundled()
         where = EarthLocation(17.27 * u.deg, 48.37 * u.deg, 531 * u.m)
+        when = Time(datetime.datetime(2024, 9, 25, 21, 56, 37, tzinfo=datetime.UTC))
         names = catalogue.names(masked=False)
-        vmags = catalogue.vmag(where, masked=False)
+        vmags = catalogue.vmag(where, when, masked=False)
 
         assert len(names) == len(vmags)
         brightest_star = vmags[len(Catalogue.PLANETS):].argmin() + len(Catalogue.PLANETS)
